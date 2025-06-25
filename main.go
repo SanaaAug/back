@@ -131,7 +131,7 @@ func sendCookie(w http.ResponseWriter, first bool, session_id_week string, sessi
 			Expires:  time.Now().Add(sessionDurationMonth),
 			HttpOnly: true,
 			Secure:   true,
-			SameSite: http.SameSiteLaxMode,
+			SameSite: http.SameSiteNoneMode,
 			Path:     "/",
 		})
 	}
@@ -142,7 +142,7 @@ func sendCookie(w http.ResponseWriter, first bool, session_id_week string, sessi
 		Expires:  time.Now().Add(sessionDurationDay),
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteNoneMode,
 		Path:     "/",
 	})
 
@@ -384,14 +384,7 @@ func handle_google_callback(w http.ResponseWriter, r *http.Request) {
 			sendCookie(w, false, session_id_week, "")
 		}
 	}
-	j, err := json.Marshal(user)
-	if err != nil {
-		http.Error(w, "Server error", http.StatusInternalServerError)
-		log.Fatal(err.Error())
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(j)
+	http.Redirect(w, r, "https://front-jade-two.vercel.app", http.StatusFound)
 	log.Printf("User logged in: %s (ID: %s) image %s", user.Firstname, user.GoogleID, user.ImageURL)
 }
 
