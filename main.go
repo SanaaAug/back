@@ -41,7 +41,7 @@ func init() {
 	googleConfig = &oauth2.Config{
 		ClientID:     Google_ClientID,
 		ClientSecret: Google_ClientSecret,
-		RedirectURL:  "http://localhost:3000/auth/google/callback",
+		RedirectURL:  "https://back-0fft.onrender.com/auth/google/callback",
 		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"},
 		Endpoint:     google.Endpoint,
 	}
@@ -55,7 +55,7 @@ func init() {
 	facebookConfig = &oauth2.Config{
 		ClientID:     Facebook_ClientID,
 		ClientSecret: Facebook_ClientSecret,
-		RedirectURL:  "http://localhost:3000/auth/facebook/callback",
+		RedirectURL:  "https://back-0fft.onrender.com/auth/facebook/callback",
 		Scopes:       []string{"public_profile", "email"},
 		Endpoint:     facebook.Endpoint,
 	}
@@ -95,7 +95,7 @@ func main() {
 	// r.Get("/auth/facebook/callback", handle_facebook_callback)
 
 	corsHandler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173"},
+		AllowedOrigins:   []string{"https://front-95njcfsdo-1f6s-projects.vercel.app"},
 		AllowCredentials: true,
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS", "DELETE"},
 		AllowedHeaders:   []string{"Content-Type"},
