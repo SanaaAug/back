@@ -384,7 +384,14 @@ func handle_google_callback(w http.ResponseWriter, r *http.Request) {
 			sendCookie(w, false, session_id_week, "")
 		}
 	}
-	http.Redirect(w, r, "https://front-jade-two.vercel.app", http.StatusFound)
+	j, err := json.Marshal(user)
+	if err != nil {
+		http.Error(w, "Server error", http.StatusInternalServerError)
+		log.Fatal(err.Error())
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(j)
 	log.Printf("User logged in: %s (ID: %s) image %s", user.Firstname, user.GoogleID, user.ImageURL)
 }
 
