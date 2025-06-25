@@ -231,7 +231,7 @@ func handle_delete(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&acc)
 	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		http.Redirect(w, r, "http://localhost:5173/", http.StatusFound)
+		http.Redirect(w, r, "https://front-jade-two.vercel.app/", http.StatusFound)
 		log.Fatal(err.Error())
 		return
 	}
@@ -262,19 +262,19 @@ func handle_signup(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		http.Redirect(w, r, "http://localhost:5173/", http.StatusFound)
+		http.Redirect(w, r, "https://front-jade-two.vercel.app/", http.StatusFound)
 		log.Fatal(err.Error())
 		return
 	}
 	if validateUserByEmail(user.Email) {
 		http.Error(w, "This email is registred.", http.StatusBadRequest)
-		http.Redirect(w, r, "http://localhost:5173/", http.StatusFound)
+		http.Redirect(w, r, "https://front-jade-two.vercel.app/", http.StatusFound)
 		return
 	}
 
 	if user.PhoneNumber != "" && validateUserByPhone(user.PhoneNumber) {
 		http.Error(w, "This email is registred.", http.StatusBadRequest)
-		http.Redirect(w, r, "http://localhost:5173/", http.StatusFound)
+		http.Redirect(w, r, "https://front-jade-two.vercel.app/", http.StatusFound)
 		return
 	}
 
@@ -384,7 +384,7 @@ func handle_google_callback(w http.ResponseWriter, r *http.Request) {
 			sendCookie(w, false, session_id_week, "")
 		}
 	}
-	http.Redirect(w, r, "http://localhost:5173/", http.StatusFound)
+	http.Redirect(w, r, "https://front-jade-two.vercel.app/", http.StatusFound)
 	log.Printf("User logged in: %s (ID: %s) image %s", user.Firstname, user.GoogleID, user.ImageURL)
 }
 
