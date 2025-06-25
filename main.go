@@ -2,11 +2,6 @@
 // use htmx
 // register device
 
-// export Google_ClientID="678423924487-embq50bfe7q0flq7fc5cbpire8oltq4i.apps.googleusercontent.com"
-// export Google_ClientSecret="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"
-// export Facebook_ClientID="1000577802291152"
-// export Facebook_ClientSecret="57c825c2feecdbc89e1cac69893bd053"
-
 package main
 
 import (
@@ -32,6 +27,11 @@ var (
 	facebookConfig *oauth2.Config
 )
 
+const Google_ClientID = "678423924487-embq50bfe7q0flq7fc5cbpire8oltq4i.apps.googleusercontent.com"
+const Google_ClientSecret = "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"
+const Facebook_ClientID = "1000577802291152"
+const Facebook_ClientSecret = "57c825c2feecdbc89e1cac69893bd053"
+
 const sessionCookieNameDay = "session_token_day"
 const sessionDurationDay = time.Hour * 24
 const sessionCookieNameMonth = "session_token_month"
@@ -39,8 +39,8 @@ const sessionDurationMonth = time.Hour * 24 * 30
 
 func init() {
 	googleConfig = &oauth2.Config{
-		ClientID:     os.Getenv("Google_ClientID"),
-		ClientSecret: os.Getenv("Google_ClientSecret"),
+		ClientID:     Google_ClientID,
+		ClientSecret: Google_ClientSecret,
 		RedirectURL:  "http://localhost:3000/auth/google/callback",
 		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"},
 		Endpoint:     google.Endpoint,
@@ -53,8 +53,8 @@ func init() {
 	log.Println(googleConfig.ClientID)
 
 	facebookConfig = &oauth2.Config{
-		ClientID:     os.Getenv("Facebook_ClientID"),
-		ClientSecret: os.Getenv("Facebook_ClientSecret"),
+		ClientID:     Facebook_ClientID,
+		ClientSecret: Facebook_ClientSecret,
 		RedirectURL:  "http://localhost:3000/auth/facebook/callback",
 		Scopes:       []string{"public_profile", "email"},
 		Endpoint:     facebook.Endpoint,
