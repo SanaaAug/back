@@ -1,7 +1,3 @@
-// big server with sectioooooon xD
-// use htmx
-// register device
-
 package main
 
 import (
@@ -9,10 +5,13 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -91,8 +90,8 @@ func main() {
 	r.Get("/auth/google", handle_google_login_redirect)
 	r.Get("/auth/google/callback", handle_google_callback)
 
-	// r.Get("/auth/facebook", handle_facebook_login)
-	// r.Get("/auth/facebook/callback", handle_facebook_callback)
+	r.Get("/auth/facebook", handle_facebook_login)
+	r.Get("/auth/facebook/callback", handle_facebook_callback)
 
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins: []string{"https://front-jade-two.vercel.app",
@@ -363,111 +362,113 @@ func handle_google_callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := User{Username: userinfo.Name, Firstname: userinfo.Given_name, Lastname: userinfo.Family_name, Email: userinfo.Email, Password: "external_login", GoogleID: userinfo.ID}
-	var session_id_week string
+	var session_id_day string
 	var session_id_month string
 
 	var id int
 
 	if !validateUserByEmail(user.Email) {
-		_, session_id_week, session_id_month = addUser(&user)
-		sendCookie(w, true, session_id_week, session_id_month)
+		_, session_id_day, session_id_month = addUser(&user)
+		sendCookie(w, true, session_id_day, session_id_month)
 	} else {
 		id = getUserId(user.Email)
-		session_id_week = getSessionForUserID(user.ID, 1)
+		session_id_day = getSessionForUserID(user.ID, 1)
 		session_id_month = getSessionForUserID(user.ID, 2)
-		if session_id_week == "" && session_id_month == "" {
-			session_id_week = addSession(id, 1)
+		if session_id_day == "" && session_id_month == "" {
+			session_id_day = addSession(id, 1)
 			session_id_month = addSession(id, 2)
-			sendCookie(w, true, session_id_week, session_id_month)
-		} else if session_id_week == "" && session_id_month != "" {
-			session_id_week = addSession(id, 1)
-			sendCookie(w, false, session_id_week, "")
+			sendCookie(w, true, session_id_day, session_id_month)
+		} else if session_id_day == "" && session_id_month != "" {
+			session_id_day = addSession(id, 1)
+			sendCookie(w, false, session_id_day, "")
 		}
 	}
 	http.Redirect(w, r, "https://front-jade-two.vercel.app", http.StatusFound)
 	log.Printf("User logged in: %s (ID: %s) image %s", user.Firstname, user.GoogleID, user.ImageURL)
 }
 
-// func splitFullName(fullName string) (firstName, lastName string) {
-// 	names := strings.Fields(fullName)
-// 	if len(names) == 0 {
-// 		return "", ""
-// 	} else if len(names) == 1 {
-// 		return names[0], ""
-// 	} else {
-// 		firstName = names[0]
-// 		lastName = strings.Join(names[1:], " ")
-// 		return firstName, lastName
-// 	}
-// }
+func splitFullName(fullName string) (firstName, lastName string) {
+	names := strings.Fields(fullName)
+	if len(names) == 0 {
+		return "", ""
+	} else if len(names) == 1 {
+		return names[0], ""
+	} else {
+		firstName = names[0]
+		lastName = strings.Join(names[1:], " ")
+		return firstName, lastName
+	}
+}
 
-// func handle_facebook_login(w http.ResponseWriter, r *http.Request) {
-// 	url := facebookConfig.AuthCodeURL(oauthStateString, oauth2.AccessTypeOffline)
-// 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
-// }
+func handle_facebook_login(w http.ResponseWriter, r *http.Request) {
+	url := facebookConfig.AuthCodeURL(oauthStateString, oauth2.AccessTypeOffline)
+	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+}
 
-// func handle_facebook_callback(w http.ResponseWriter, r *http.Request) {
-// 	state := r.FormValue("state")
-// 	if state != oauthStateString {
-// 		http.Error(w, "State mismatch: CSRF attack detected!", http.StatusUnauthorized)
-// 		log.Printf("Facebook callback state mismatch. Expected: %s, Got: %s", oauthStateString, state)
-// 		return
-// 	}
+func handle_facebook_callback(w http.ResponseWriter, r *http.Request) {
+	state := r.FormValue("state")
+	if state != oauthStateString {
+		http.Error(w, "State mismatch: CSRF attack detected!", http.StatusUnauthorized)
+		log.Printf("Facebook callback state mismatch. Expected: %s, Got: %s", oauthStateString, state)
+		return
+	}
 
-// 	code := r.FormValue("code")
-// 	if code == "" {
-// 		http.Error(w, "Authorization code not provided", http.StatusBadRequest)
-// 		log.Println("Facebook callback: No authorization code.")
-// 		return
-// 	}
+	code := r.FormValue("code")
+	if code == "" {
+		http.Error(w, "Authorization code not provided", http.StatusBadRequest)
+		log.Println("Facebook callback: No authorization code.")
+		return
+	}
 
-// 	token, err := facebookConfig.Exchange(r.Context(), code)
-// 	if err != nil {
-// 		http.Error(w, "Failed to exchange code for token: "+err.Error(), http.StatusInternalServerError)
-// 		log.Printf("Facebook token exchange error: %v", err)
-// 		return
-// 	}
+	token, err := facebookConfig.Exchange(r.Context(), code)
+	if err != nil {
+		http.Error(w, "Failed to exchange code for token: "+err.Error(), http.StatusInternalServerError)
+		log.Printf("Facebook token exchange error: %v", err)
+		return
+	}
 
-// 	graphAPIURL := fmt.Sprintf("https://graph.facebook.com/me?fields=id,name,email&access_token=%s", url.QueryEscape(token.AccessToken))
-// 	resp, err := http.Get(graphAPIURL)
-// 	if err != nil {
-// 		http.Error(w, "Failed to get user info from Facebook: "+err.Error(), http.StatusInternalServerError)
-// 		log.Printf("Facebook Graph API call error: %v", err)
-// 		return
-// 	}
-// 	defer resp.Body.Close()
+	graphAPIURL := fmt.Sprintf("https://graph.facebook.com/me?fields=id,name,email&access_token=%s", url.QueryEscape(token.AccessToken))
+	resp, err := http.Get(graphAPIURL)
+	if err != nil {
+		http.Error(w, "Failed to get user info from Facebook: "+err.Error(), http.StatusInternalServerError)
+		log.Printf("Facebook Graph API call error: %v", err)
+		return
+	}
+	defer resp.Body.Close()
 
-// 	if resp.StatusCode != http.StatusOK {
-// 		http.Error(w, "Failed to get user info from Facebook (API error)", http.StatusInternalServerError)
-// 		return
-// 	}
+	if resp.StatusCode != http.StatusOK {
+		http.Error(w, "Failed to get user info from Facebook (API error)", http.StatusInternalServerError)
+		return
+	}
 
-// 	var userinfo User
-// 	if err := json.NewDecoder(resp.Body).Decode(&userinfo); err != nil {
-// 		http.Error(w, "Failed to parse Facebook user info: "+err.Error(), http.StatusInternalServerError)
-// 		log.Printf("Facebook user info JSON decode error: %v", err)
-// 		return
-// 	}
+	var userinfo FacebookUserInfo
+	if err := json.NewDecoder(resp.Body).Decode(&userinfo); err != nil {
+		http.Error(w, "Failed to parse Facebook user info: "+err.Error(), http.StatusInternalServerError)
+		log.Printf("Facebook user info JSON decode error: %v", err)
+		return
+	}
 
-// 	var session_id_week string
-// 	var session_id_months string
-// 	var id int
-// 	if !validateUserByEmail(userinfo.Email) {
-// 		userinfo.Firstname, userinfo.Lastname = splitFullName(userinfo.Firstname)
-// 		id, session_id_week, session_id_months = addUser(&userinfo)
-// 	} else {
-// 		session_id_week = getSessionForUserID(userinfo.ID)
-// 	}
-// 	log.Println(id)
+	user := User{Username: userinfo.Name, Email: userinfo.Email, Password: "external_login", GoogleID: userinfo.ID}
+	user.Firstname, user.Lastname = splitFullName(user.Username)
+	var session_id_day string
+	var session_id_month string
+	var id int
+	if !validateUserByEmail(user.Email) {
+		_, session_id_day, session_id_month = addUser(&user)
+		sendCookie(w, true, session_id_day, session_id_month)
+	} else {
+		id = getUserId(user.Email)
+		session_id_day = getSessionForUserID(user.ID, 1)
+		session_id_month = getSessionForUserID(user.ID, 2)
+		if session_id_day == "" && session_id_month == "" {
+			session_id_day = addSession(id, 1)
+			session_id_month = addSession(id, 2)
+			sendCookie(w, true, session_id_day, session_id_month)
+		} else if session_id_day == "" && session_id_month != "" {
+			session_id_day = addSession(id, 1)
+			sendCookie(w, false, session_id_day, "")
+		}
+	}
 
-// 	http.SetCookie(w, &http.Cookie{
-// 		Name:     sessionCookieNameDay,
-// 		Value:    session_id,
-// 		Path:     "/",
-// 		Expires:  time.Now().Add(sessionDurationDay),
-// 		HttpOnly: true,
-// 		Secure:   true,
-// 		SameSite: http.SameSiteLaxMode,
-// 	})
-// 	http.Redirect(w, r, "http://localhost:5173/", http.StatusFound)
-// }
+	http.Redirect(w, r, "http://localhost:5173/", http.StatusFound)
+}
