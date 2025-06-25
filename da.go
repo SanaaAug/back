@@ -12,7 +12,7 @@ import (
 var db *sql.DB
 
 func initDB() {
-	psql_str := "host=localhost port=5432 user=postgres password=0819 dbname=project1 sslmode=disable"
+	psql_str := "postgresql://user1:jN0jzQCpjlPKULNBorx6DD3uldVzQbmG@dpg-d1dsfqqdbo4c73e8sdg0-a/database1_kakl"
 	var err error
 	db, err = sql.Open("postgres", psql_str)
 	if err != nil {
