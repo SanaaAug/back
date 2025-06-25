@@ -95,7 +95,9 @@ func main() {
 	// r.Get("/auth/facebook/callback", handle_facebook_callback)
 
 	corsHandler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"https://front-95njcfsdo-1f6s-projects.vercel.app"},
+		AllowedOrigins: []string{"https://front-jade-two.vercel.app",
+			"https://front-git-main-1f6s-projects.vercel.app",
+			"https://front-95njcfsdo-1f6s-projects.vercel.app"},
 		AllowCredentials: true,
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS", "DELETE"},
 		AllowedHeaders:   []string{"Content-Type"},
