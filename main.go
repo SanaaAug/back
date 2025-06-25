@@ -470,5 +470,5 @@ func handle_facebook_callback(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	http.Redirect(w, r, "http://localhost:5173/", http.StatusFound)
+	http.Redirect(w, r, "https://front-jade-two.vercel.app/", http.StatusFound)
 }
