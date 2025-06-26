@@ -43,10 +43,10 @@ func addUser(u *User, origin int) (int, string, string) {
 	case 0:
 		err = db.QueryRow("insert into users (firstname, lastname, username, email, profile_image, password_hash)values($1, $2, $3, $4, $5, $6) returning id", u.Firstname, u.Lastname, u.Username, u.Email, u.ImageByte, u.Password).Scan(&id)
 	case 1:
-		u.Username += "google"
+		u.Username += " (google)"
 		err = db.QueryRow("insert into users (firstname, lastname, username, email, profile_image, password_hash, google_id, profile_image_url)values($1, $2, $3, $4, $5,$6, $7, $8) returning id", u.Firstname, u.Lastname, u.Username, u.Email, u.ImageByte, u.Password, u.GoogleID, u.ImageURL).Scan(&id)
 	case 2:
-		u.Username += "facebook"
+		u.Username += " (facebook)"
 		err = db.QueryRow("insert into users (firstname, lastname, username, email, profile_image, password_hash, facebook_id, profile_image_url)values($1, $2, $3, $4, $5,$6, $7, $8) returning id", u.Firstname, u.Lastname, u.Username, u.Email, u.ImageByte, u.Password, u.FacebookID, u.ImageURL).Scan(&id)
 	}
 
