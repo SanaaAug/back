@@ -342,6 +342,7 @@ func handle_google_callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token, err := googleConfig.Exchange(context.Background(), code)
+
 	if err != nil {
 		http.Error(w, "Failed to exchange code for token: "+err.Error(), http.StatusInternalServerError)
 		log.Printf("[ERROR] Google token exchange error: %v", err)
@@ -369,8 +370,9 @@ func handle_google_callback(w http.ResponseWriter, r *http.Request) {
 	var id int
 
 	if !validateUserByEmail(user.Email) {
-		_, session_id_day, session_id_month = addUser(&user, 1)
+		id, session_id_day, session_id_month = addUser(&user, 1)
 		sendCookie(w, true, session_id_day, session_id_month)
+		save_token(id, token, 1)
 	} else {
 		id = getUserId(user.Email)
 		session_id_day = getSessionForUserID(user.ID, 1)
@@ -455,8 +457,9 @@ func handle_facebook_callback(w http.ResponseWriter, r *http.Request) {
 	var session_id_month string
 	var id int
 	if !validateUserByEmail(user.Email) {
-		_, session_id_day, session_id_month = addUser(&user, 2)
+		id, session_id_day, session_id_month = addUser(&user, 2)
 		sendCookie(w, true, session_id_day, session_id_month)
+		save_token(id, token, 1)
 	} else {
 		id = getUserId(user.Email)
 		session_id_day = getSessionForUserID(user.ID, 1)

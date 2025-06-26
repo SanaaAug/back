@@ -7,6 +7,7 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
+	"golang.org/x/oauth2"
 )
 
 var db *sql.DB
@@ -204,4 +205,16 @@ func validateUserByPhone(number string) bool {
 	}
 	log.Println("[INFO] Tried to validate user with phone number: " + number)
 	return exist
+}
+
+func save_token(user_id int, t *oauth2.Token, t_type int) {
+	var err error
+	if t_type == 1 {
+		_, err = db.Exec("insert into tokens (user_id, google_access_token, google_access_token_expiry, google_refresh_token) values ($1, $2, $3, $4)", user_id, t.AccessToken, t.Expiry, t.RefreshToken)
+	} else {
+		_, err = db.Exec("insert into tokens (user_id, facebook_access_token, facebook_access_token_expiry, facebook_refresh_token) values ($1, $2, $3, $4)", user_id, t.AccessToken, t.Expiry, t.RefreshToken)
+	}
+	if err != nil {
+		log.Println("[ERROR] Failed to save tokens with user id: " + strconv.Itoa(user_id) + "failed: " + err.Error())
+	}
 }
