@@ -66,7 +66,7 @@ func init() {
 	log.Println(facebookConfig.ClientID)
 }
 
-var oauthStateString = "random-string-for-csrf-protection"
+var oauthStateString = "random-string-for-csrf-protection jlkjfkejfkljeklfjkekljekjkejfenn'qlepe"
 
 func generateSessionId() (string, error) {
 	s_id := make([]byte, 32)
@@ -103,7 +103,7 @@ func main() {
 	}).Handler(r)
 
 	go func() {
-		log.Println("Server is listening on :3000")
+		log.Println("Server is listening")
 		if err := http.ListenAndServe(":3000", corsHandler); err != nil {
 			log.Fatalf("Server failed: %v", err)
 		}
@@ -164,49 +164,44 @@ func handle_first(w http.ResponseWriter, r *http.Request) {
 
 	sessionToken, err := r.Cookie(sessionCookieNameDay)
 	if err != nil {
-		http.Error(w, `{"error":"no session"}`, http.StatusUnauthorized)
-		return
-	}
+		http.Error(w, `{"error":"no short session"}`, http.StatusUnauthorized)
+	} else {
+		sess := getSession(sessionToken.Value)
+		if sess.Authenticated && sess.ExpiresAt.After(time.Now()) {
+			log.Println("Getting user for session [authenticated user]:", sess.UserID)
 
-	log.Println("Session Token:", sessionToken.Value)
-	sess := getSession(sessionToken.Value)
-
-	if sess.Authenticated && sess.ExpiresAt.After(time.Now()) {
-		log.Println("Getting user for session [authenticated user]:", sess.UserID)
-
-		userinfo, err := getUser(sess.UserID)
-		if err != nil {
-			http.Error(w, `{"error":"user not found"}`, http.StatusInternalServerError)
-			log.Println("GetUser error:", err)
+			userinfo, err := getUser(sess.UserID)
+			if err != nil {
+				http.Error(w, `{"error":"user not found"}`, http.StatusInternalServerError)
+				log.Println("GetUser error:", err)
+				return
+			}
+			j, err := json.Marshal(userinfo)
+			if err != nil {
+				http.Error(w, "Server error", http.StatusInternalServerError)
+				log.Fatal(err.Error())
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(j)
 			return
 		}
-		j, err := json.Marshal(userinfo)
-		if err != nil {
-			http.Error(w, "Server error", http.StatusInternalServerError)
-			log.Fatal(err.Error())
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(j)
-		return
 	}
 
 	sessionToken, err = r.Cookie(sessionCookieNameMonth)
 	if err != nil {
-		http.Error(w, `{"error":"no session"}`, http.StatusUnauthorized)
+		http.Error(w, `{"error":"no long session"}`, http.StatusUnauthorized)
 		return
 	}
 
-	log.Println("Session Token:", sessionToken.Value)
-	sess = getSession(sessionToken.Value)
+	sess := getSession(sessionToken.Value)
 
 	if sess.Authenticated && sess.ExpiresAt.After(time.Now()) {
-		log.Println("Getting user for session [authenticated user]:", sess.UserID)
+		log.Println("[INFO] Getting user for session [authenticated user]:", sess.UserID)
 
 		userinfo, err := getUser(sess.UserID)
 		if err != nil {
 			http.Error(w, `{"error":"user not found"}`, http.StatusInternalServerError)
-			log.Println("GetUser error:", err)
 			return
 		}
 		session_id := addSession(userinfo.ID, 2)
@@ -214,7 +209,7 @@ func handle_first(w http.ResponseWriter, r *http.Request) {
 		j, err := json.Marshal(userinfo)
 		if err != nil {
 			http.Error(w, "Server error", http.StatusInternalServerError)
-			log.Fatal(err.Error())
+			log.Println("[ERROR] Failed to convert user info into json data. failed: " + err.Error())
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -231,7 +226,7 @@ func handle_delete(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		http.Redirect(w, r, "https://front-jade-two.vercel.app/", http.StatusFound)
-		log.Fatal(err.Error())
+		log.Println("[WARN] Invalid request body error: " + err.Error())
 		return
 	}
 	deleteUser(acc.Email, acc.Password)
@@ -243,12 +238,15 @@ func handle_delete(w http.ResponseWriter, r *http.Request) {
 func handle_logout(w http.ResponseWriter, r *http.Request) {
 	sessionToken, err := r.Cookie(sessionCookieNameDay)
 	if err != nil {
-
+		http.Error(w, `{"error":"no short session"}`, http.StatusUnauthorized)
+	} else {
+		deleteSession(sessionToken.Value)
 	}
-	deleteSession(sessionToken.Value)
 	sessionToken, err = r.Cookie(sessionCookieNameMonth)
 	if err != nil {
-
+		http.Error(w, `{"error":"no short session"}`, http.StatusUnauthorized)
+	} else {
+		deleteSession(sessionToken.Value)
 	}
 	deleteSession(sessionToken.Value)
 	emptyCookie(w, sessionCookieNameDay)
@@ -262,18 +260,20 @@ func handle_signup(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		http.Redirect(w, r, "https://front-jade-two.vercel.app/", http.StatusFound)
-		log.Fatal(err.Error())
+		log.Println("[WARN] Invalid request body error: " + err.Error())
 		return
 	}
-	if validateUserByEmail(user.Email) {
+	if user.Email != "" && validateUserByEmail(user.Email) {
 		http.Error(w, "This email is registred.", http.StatusBadRequest)
 		http.Redirect(w, r, "https://front-jade-two.vercel.app/", http.StatusFound)
+		log.Println("[WARN] Registered email.")
 		return
 	}
 
 	if user.PhoneNumber != "" && validateUserByPhone(user.PhoneNumber) {
-		http.Error(w, "This email is registred.", http.StatusBadRequest)
+		http.Error(w, "This phone number is registred.", http.StatusBadRequest)
 		http.Redirect(w, r, "https://front-jade-two.vercel.app/", http.StatusFound)
+		log.Println("[WARN] Registered phone number.")
 		return
 	}
 
@@ -283,7 +283,7 @@ func handle_signup(w http.ResponseWriter, r *http.Request) {
 	j, err := json.Marshal(user)
 	if err != nil {
 		http.Error(w, "Server error", http.StatusInternalServerError)
-		log.Fatal(err.Error())
+		log.Println("[ERROR] Failed to convert user info into json data. failed: " + err.Error())
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -296,19 +296,19 @@ func handle_login(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&acc)
 	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		log.Fatal(err.Error())
+		log.Println("[ERROR] Invalid request body error: " + err.Error())
 		return
 	}
 	user, err := validateUser(acc.Email, acc.Password)
 	if err != nil {
 		http.Error(w, "Invalid credentials error", http.StatusUnauthorized)
-		log.Fatal(err.Error())
+		log.Println("[ERROR] Invalid credentials error: " + err.Error())
 		return
 	}
 	j, err := json.Marshal(user)
 	if err != nil {
 		http.Error(w, "Server error", http.StatusInternalServerError)
-		log.Fatal(err.Error())
+		log.Println("[ERROR] Failed to convert user info into json data. failed: " + err.Error())
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -319,13 +319,10 @@ func handle_password_change(w http.ResponseWriter, r *http.Request) {
 	var acc Account
 	err := json.NewDecoder(r.Body).Decode(&acc)
 	if err != nil {
-
+		log.Println("[ERROR] Invalid request body error: " + err.Error())
+		return
 	}
-	result, err := change_password(acc.Email, acc.Password, acc.NewPassword)
-	if err != nil {
-
-	}
-	log.Println(result)
+	change_password(acc.Email, acc.Password, acc.NewPassword)
 }
 
 func handle_google_login_redirect(w http.ResponseWriter, r *http.Request) {
@@ -336,32 +333,40 @@ func handle_google_login_redirect(w http.ResponseWriter, r *http.Request) {
 func handle_google_callback(w http.ResponseWriter, r *http.Request) {
 	state := r.FormValue("state")
 	if state != oauthStateString {
+		http.Error(w, "State mismatch: CSRF attack detected!", http.StatusUnauthorized)
+		log.Printf("[FATAL] Google callback state mismatch. Expected: %s, Got: %s", oauthStateString, state)
 		return
 	}
 
 	code := r.FormValue("code")
 	if code == "" {
+		http.Error(w, "Authorization code not provided", http.StatusBadRequest)
+		log.Println("[ERROR] Google callback: No authorization code.")
 		return
 	}
 
 	token, err := googleConfig.Exchange(context.Background(), code)
 	if err != nil {
-
+		http.Error(w, "Failed to exchange code for token: "+err.Error(), http.StatusInternalServerError)
+		log.Printf("[ERROR] Google token exchange error: %v", err)
+		return
 	}
 
 	client := googleConfig.Client(context.Background(), token)
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
 	if err != nil {
-
+		http.Error(w, "Failed to get user info from Google: "+err.Error(), http.StatusInternalServerError)
+		log.Printf("[ERROR] Google call error: %v", err)
+		return
 	}
 
 	defer resp.Body.Close()
 	var userinfo GoogleUserInfo
 	if err := json.NewDecoder(resp.Body).Decode(&userinfo); err != nil {
-		log.Fatal(err.Error())
+		log.Println("[ERROR] Invalid response body error: " + err.Error())
 	}
 
-	user := User{Username: userinfo.Name, Firstname: userinfo.Given_name, Lastname: userinfo.Family_name, Email: userinfo.Email, Password: "external_login", GoogleID: userinfo.ID}
+	user := User{Username: userinfo.Name, Firstname: userinfo.Given_name, Lastname: userinfo.Family_name, Email: userinfo.Email, Password: "external_login", GoogleID: userinfo.ID, ImageURL: userinfo.PictureURL}
 	var session_id_day string
 	var session_id_month string
 
@@ -384,7 +389,6 @@ func handle_google_callback(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	http.Redirect(w, r, "https://front-jade-two.vercel.app", http.StatusFound)
-	log.Printf("User logged in: %s (ID: %s) image %s", user.Firstname, user.GoogleID, user.ImageURL)
 }
 
 func splitFullName(fullName string) (firstName, lastName string) {
@@ -409,21 +413,21 @@ func handle_facebook_callback(w http.ResponseWriter, r *http.Request) {
 	state := r.FormValue("state")
 	if state != oauthStateString {
 		http.Error(w, "State mismatch: CSRF attack detected!", http.StatusUnauthorized)
-		log.Printf("Facebook callback state mismatch. Expected: %s, Got: %s", oauthStateString, state)
+		log.Printf("[ERROR]Facebook callback state mismatch. Expected: %s, Got: %s", oauthStateString, state)
 		return
 	}
 
 	code := r.FormValue("code")
 	if code == "" {
 		http.Error(w, "Authorization code not provided", http.StatusBadRequest)
-		log.Println("Facebook callback: No authorization code.")
+		log.Println("[ERROR] Facebook callback: No authorization code.")
 		return
 	}
 
 	token, err := facebookConfig.Exchange(r.Context(), code)
 	if err != nil {
 		http.Error(w, "Failed to exchange code for token: "+err.Error(), http.StatusInternalServerError)
-		log.Printf("Facebook token exchange error: %v", err)
+		log.Printf("[ERROR] Facebook token exchange error: %v", err)
 		return
 	}
 
@@ -431,13 +435,14 @@ func handle_facebook_callback(w http.ResponseWriter, r *http.Request) {
 	resp, err := http.Get(graphAPIURL)
 	if err != nil {
 		http.Error(w, "Failed to get user info from Facebook: "+err.Error(), http.StatusInternalServerError)
-		log.Printf("Facebook Graph API call error: %v", err)
+		log.Printf("[ERROR] Facebook Graph API call error: %v", err)
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		http.Error(w, "Failed to get user info from Facebook (API error)", http.StatusInternalServerError)
+		log.Printf("[ERROR] Failed to get user info error: %v", resp.StatusCode)
 		return
 	}
 
@@ -448,7 +453,7 @@ func handle_facebook_callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := User{Username: userinfo.Name, Email: userinfo.Email, Password: "external_login", GoogleID: userinfo.ID}
+	user := User{Username: userinfo.Name, Email: userinfo.Email, Password: "external_login", GoogleID: userinfo.ID, ImageURL: userinfo.Picture.Data.URL}
 	user.Firstname, user.Lastname = splitFullName(user.Username)
 	var session_id_day string
 	var session_id_month string
