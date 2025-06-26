@@ -32,7 +32,7 @@ type GoogleUserInfo struct {
 	Name        string `json:"name"`
 	Given_name  string `json:"given_name"`
 	Family_name string `json:"family_name"`
-	PictureURL  string `json:"pictire"`
+	PictureURL  string `json:"picture"`
 }
 
 type FacebookUserInfo struct {
