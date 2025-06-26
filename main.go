@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"time"
 
@@ -163,23 +164,21 @@ func handle_first(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	sessionToken, err := r.Cookie(sessionCookieNameDay)
-	if err != nil {
-		http.Error(w, `{"error":"no short session"}`, http.StatusUnauthorized)
-	} else {
+	if err == nil {
 		sess := getSession(sessionToken.Value)
-		if sess.Authenticated && sess.ExpiresAt.After(time.Now()) {
-			log.Println("Getting user for session [authenticated user]:", sess.UserID)
+		if sess != nil && sess.Authenticated && sess.ExpiresAt.After(time.Now()) {
+			log.Println("[INFO] Getting user for session [authenticated user]:" + strconv.Itoa(sess.UserID))
 
 			userinfo, err := getUser(sess.UserID)
 			if err != nil {
 				http.Error(w, `{"error":"user not found"}`, http.StatusInternalServerError)
-				log.Println("GetUser error:", err)
+				log.Println("[ERROR] GetUser error:", err)
 				return
 			}
 			j, err := json.Marshal(userinfo)
 			if err != nil {
 				http.Error(w, "Server error", http.StatusInternalServerError)
-				log.Fatal(err.Error())
+				log.Println("[ERROR] Failed to convert user info into json data" + err.Error())
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -189,32 +188,29 @@ func handle_first(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sessionToken, err = r.Cookie(sessionCookieNameMonth)
-	if err != nil {
-		http.Error(w, `{"error":"no long session"}`, http.StatusUnauthorized)
-		return
-	}
+	if err == nil {
+		sess := getSession(sessionToken.Value)
 
-	sess := getSession(sessionToken.Value)
+		if sess != nil && sess.Authenticated && sess.ExpiresAt.After(time.Now()) {
+			log.Println("[INFO] Getting user for session [authenticated user]:", sess.UserID)
 
-	if sess.Authenticated && sess.ExpiresAt.After(time.Now()) {
-		log.Println("[INFO] Getting user for session [authenticated user]:", sess.UserID)
-
-		userinfo, err := getUser(sess.UserID)
-		if err != nil {
-			http.Error(w, `{"error":"user not found"}`, http.StatusInternalServerError)
+			userinfo, err := getUser(sess.UserID)
+			if err != nil {
+				http.Error(w, `{"error":"user not found"}`, http.StatusInternalServerError)
+				return
+			}
+			session_id := addSession(userinfo.ID, 2)
+			sendCookie(w, false, session_id, "")
+			j, err := json.Marshal(userinfo)
+			if err != nil {
+				http.Error(w, "Server error", http.StatusInternalServerError)
+				log.Println("[ERROR] Failed to convert user info into json data. failed: " + err.Error())
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(j)
 			return
 		}
-		session_id := addSession(userinfo.ID, 2)
-		sendCookie(w, false, session_id, "")
-		j, err := json.Marshal(userinfo)
-		if err != nil {
-			http.Error(w, "Server error", http.StatusInternalServerError)
-			log.Println("[ERROR] Failed to convert user info into json data. failed: " + err.Error())
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(j)
-		return
 	}
 
 	http.Error(w, `{"error":"session expired"}`, http.StatusUnauthorized)

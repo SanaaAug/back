@@ -170,7 +170,7 @@ func getSession(session_id string) (s *SessionData) {
 	err := db.QueryRow("select user_id, authenticated, device_id, created_at, expires_at from sessions where session_id = $1", session_id).Scan(&session.UserID, &session.Authenticated, &session.DeviceID, &session.CreatedAt, &session.ExpiresAt)
 	if err != nil {
 		log.Println("[ERROR] Failed to get session info with session_id: " + session_id + "failed: " + err.Error())
-		return
+		return nil
 	}
 	log.Println("[INFO] Got session info with session_id: " + session_id)
 	return &session
