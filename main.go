@@ -42,7 +42,7 @@ func init() {
 		ClientID:     Google_ClientID,
 		ClientSecret: Google_ClientSecret,
 		RedirectURL:  "https://back-0fft.onrender.com/auth/google/callback",
-		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"},
+		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email", oauth2.AccessTypeOffline},
 		Endpoint:     google.Endpoint,
 	}
 
@@ -342,7 +342,6 @@ func handle_google_callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token, err := googleConfig.Exchange(context.Background(), code)
-
 	if err != nil {
 		http.Error(w, "Failed to exchange code for token: "+err.Error(), http.StatusInternalServerError)
 		log.Printf("[ERROR] Google token exchange error: %v", err)
