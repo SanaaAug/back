@@ -236,15 +236,15 @@ func handle_logout(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, `{"error":"no short session"}`, http.StatusUnauthorized)
 	} else {
-		deleteSession(sessionToken.Value)
+		editSession(sessionToken.Value)
 	}
 	sessionToken, err = r.Cookie(sessionCookieNameMonth)
 	if err != nil {
 		http.Error(w, `{"error":"no short session"}`, http.StatusUnauthorized)
 	} else {
-		deleteSession(sessionToken.Value)
+		editSession(sessionToken.Value)
 	}
-	deleteSession(sessionToken.Value)
+	editSession(sessionToken.Value)
 	emptyCookie(w, sessionCookieNameDay)
 	emptyCookie(w, sessionCookieNameMonth)
 	w.WriteHeader(http.StatusOK)

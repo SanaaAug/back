@@ -58,7 +58,6 @@ func addUser(u *User, origin int) (int, string, string) {
 	}
 	session_id_month := addSession(id, 2)
 	session_id_day := addSession(id, 1)
-	log.Println("add user worked")
 	return id, session_id_day, session_id_month
 }
 
@@ -143,7 +142,7 @@ func change_password(email string, password string, newpass string) (bool, error
 		return false, nil
 	}
 	log.Println("[INFO] Updated user password with email: " + email)
-	deleteAllSessionOfUser(id)
+	editAllSessionOfUser(id)
 	return false, err
 }
 
@@ -156,8 +155,8 @@ func deleteUser(email string, password string) {
 	log.Println("[INFO] Deleted user with email: " + email)
 }
 
-func deleteAllSessionOfUser(user_id int) {
-	_, err := db.Exec("delete from sessions where user_id = $1", user_id)
+func editAllSessionOfUser(user_id int) {
+	_, err := db.Exec("update sessions set expires_at = NOW() where user_id = $1", user_id)
 	if err != nil {
 		log.Println("[ERROR] Failed to delete sessions of user with id: " + strconv.Itoa(user_id) + "failed: " + err.Error())
 		return
@@ -165,8 +164,8 @@ func deleteAllSessionOfUser(user_id int) {
 	log.Println("[INFO] Deleted all sessions of user with id: " + strconv.Itoa(user_id))
 }
 
-func deleteSession(session_id string) {
-	_, err := db.Exec("delete from sessions where session_id = $1", session_id)
+func editSession(session_id string) {
+	_, err := db.Exec("update sessions set expires_at = NOW() where session_id = $1", session_id)
 	if err != nil {
 		log.Println("[ERROR] Failed to delete session with session_id: " + session_id + "failed: " + err.Error())
 		return
