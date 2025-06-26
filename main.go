@@ -42,7 +42,7 @@ func init() {
 		ClientID:     Google_ClientID,
 		ClientSecret: Google_ClientSecret,
 		RedirectURL:  "https://back-0fft.onrender.com/auth/google/callback",
-		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email", oauth2.AccessTypeOffline},
+		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"},
 		Endpoint:     google.Endpoint,
 	}
 
