@@ -273,7 +273,7 @@ func handle_signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, session_short, session_long := addUser(&user)
+	id, session_short, session_long := addUser(&user, 0)
 	user.ID = id
 	sendCookie(w, true, session_short, session_long)
 	j, err := json.Marshal(user)
@@ -369,7 +369,7 @@ func handle_google_callback(w http.ResponseWriter, r *http.Request) {
 	var id int
 
 	if !validateUserByEmail(user.Email) {
-		_, session_id_day, session_id_month = addUser(&user)
+		_, session_id_day, session_id_month = addUser(&user, 1)
 		sendCookie(w, true, session_id_day, session_id_month)
 	} else {
 		id = getUserId(user.Email)
@@ -427,7 +427,7 @@ func handle_facebook_callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	graphAPIURL := fmt.Sprintf("https://graph.facebook.com/me?fields=id,name,email&access_token=%s", url.QueryEscape(token.AccessToken))
+	graphAPIURL := fmt.Sprintf("https://graph.facebook.com/me?fields=id,name,email,picture.type(large)&access_token=%s", url.QueryEscape(token.AccessToken))
 	resp, err := http.Get(graphAPIURL)
 	if err != nil {
 		http.Error(w, "Failed to get user info from Facebook: "+err.Error(), http.StatusInternalServerError)
@@ -449,13 +449,13 @@ func handle_facebook_callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := User{Username: userinfo.Name, Email: userinfo.Email, Password: "external_login", GoogleID: userinfo.ID, ImageURL: userinfo.Picture.Data.URL}
+	user := User{Username: userinfo.Name, Email: userinfo.Email, Password: "external_login", FacebookID: userinfo.ID, ImageURL: userinfo.Picture.Data.URL}
 	user.Firstname, user.Lastname = splitFullName(user.Username)
 	var session_id_day string
 	var session_id_month string
 	var id int
 	if !validateUserByEmail(user.Email) {
-		_, session_id_day, session_id_month = addUser(&user)
+		_, session_id_day, session_id_month = addUser(&user, 2)
 		sendCookie(w, true, session_id_day, session_id_month)
 	} else {
 		id = getUserId(user.Email)
